@@ -273,7 +273,11 @@ func (cc *Conn) newRule(r *Rule, op ruleOperation) *Rule {
 }
 
 func (r *Rule) handleCreateReply(reply netlink.Message) error {
-	ad, err := netlink.NewAttributeDecoder(reply.Data[4:])
+	attrs, err := msgPayload(reply)
+	if err != nil {
+		return err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return err
 	}
@@ -381,7 +385,11 @@ func ruleFromMsg(fam TableFamily, msg netlink.Message) (*Rule, error) {
 	default:
 		return nil, fmt.Errorf("unexpected header type: %v", msg.Header.Type)
 	}
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}

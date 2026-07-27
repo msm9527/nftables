@@ -289,9 +289,14 @@ func chainFromMsg(msg netlink.Message) (*Chain, error) {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v or %v", got, want1, want2)
 	}
 
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+
 	var c Chain
 
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}

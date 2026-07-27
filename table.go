@@ -242,10 +242,15 @@ func tableFromMsg(msg netlink.Message) (*Table, error) {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v or %v", got, want1, want2)
 	}
 
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+
 	var t Table
 	t.Family = TableFamily(msg.Data[0])
 
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}

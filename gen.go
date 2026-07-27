@@ -23,7 +23,11 @@ func genFromMsg(msg netlink.Message) (*Gen, error) {
 	if got, want := msg.Header.Type, genHeaderType; got != want {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v", got, want)
 	}
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}

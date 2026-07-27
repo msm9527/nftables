@@ -16,9 +16,12 @@ package nftables
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"net"
 
 	"github.com/google/nftables/binaryutil"
+	"github.com/mdlayher/netlink"
 	"golang.org/x/sys/unix"
 )
 
@@ -38,12 +41,32 @@ type NFGenMsg struct {
 }
 
 func (genmsg *NFGenMsg) Decode(b []byte) {
-	if len(b) < 4 {
+	if len(b) < nfGenMsgLen {
 		return
 	}
 	genmsg.NFGenFamily = b[0]
 	genmsg.Version = b[1]
 	genmsg.ResourceID = binary.BigEndian.Uint16(b[2:])
+}
+
+// nfGenMsgLen is the size of the nfgenmsg header that precedes the netlink
+// attributes of every nftables message.
+const nfGenMsgLen = 4
+
+// errTruncatedMsg is returned when a netlink message is too short to even hold
+// the nfgenmsg header, which means it cannot be decoded at all. Guarding
+// against this keeps a malformed or truncated message from panicking the
+// caller, which matters most for [Monitor], where decoding happens on an
+// internal goroutine that would take the whole process down with it.
+var errTruncatedMsg = errors.New("nftables: message too short to contain nfgenmsg header")
+
+// msgPayload validates that msg is long enough to contain the nfgenmsg header
+// and returns the attribute bytes that follow it.
+func msgPayload(msg netlink.Message) ([]byte, error) {
+	if len(msg.Data) < nfGenMsgLen {
+		return nil, fmt.Errorf("%w: got %d bytes, want at least %d", errTruncatedMsg, len(msg.Data), nfGenMsgLen)
+	}
+	return msg.Data[nfGenMsgLen:], nil
 }
 
 // NetFirstAndLastIP takes the beginning address of an entire network in CIDR

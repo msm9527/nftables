@@ -813,7 +813,11 @@ func setsFromMsg(msg netlink.Message) (*Set, error) {
 	if got, want1, want2 := msg.Header.Type, newSetHeaderType, delSetHeaderType; got != want1 && got != want2 {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v or %v", got, want1, want2)
 	}
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -920,7 +924,11 @@ func elementsFromMsg(fam byte, msg netlink.Message) ([]SetElement, error) {
 	if got, want1, want2 := msg.Header.Type, newElemHeaderType, delElemHeaderType; got != want1 && got != want2 {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v or %v", got, want1, want2)
 	}
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}

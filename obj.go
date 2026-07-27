@@ -231,7 +231,11 @@ func objFromMsg(msg netlink.Message, returnLegacyType bool) (Obj, error) {
 	if got, want1, want2 := msg.Header.Type, newObjHeaderType, delObjHeaderType; got != want1 && got != want2 {
 		return nil, fmt.Errorf("unexpected header type: got %v, want %v or %v", got, want1, want2)
 	}
-	ad, err := netlink.NewAttributeDecoder(msg.Data[4:])
+	attrs, err := msgPayload(msg)
+	if err != nil {
+		return nil, err
+	}
+	ad, err := netlink.NewAttributeDecoder(attrs)
 	if err != nil {
 		return nil, err
 	}
