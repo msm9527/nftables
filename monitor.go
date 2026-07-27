@@ -230,7 +230,12 @@ func (monitor *Monitor) monitor() {
 				continue
 			}
 			msgType := msg.Header.Type & 0x00ff
-			if monitor.monitorFlags&1<<msgType == 0 {
+			// Note the parentheses: in Go, & and << have the same
+			// precedence and associate left to right, so omitting them
+			// would evaluate as (monitorFlags&1)<<msgType and filter out
+			// every message except for those a monitor configured with
+			// bit 0 set (NFT_MSG_NEWTABLE) happens to let through.
+			if monitor.monitorFlags&(1<<msgType) == 0 {
 				continue
 			}
 			switch msgType {
@@ -371,7 +376,10 @@ func (cc *Conn) AddGenerationalMonitor(monitor *Monitor) (chan *MonitorEvents, e
 }
 
 func parseRuleFromMsg(msg netlink.Message) (*Rule, error) {
+	if _, err := msgPayload(msg); err != nil {
+		return nil, err
+	}
 	genmsg := &NFGenMsg{}
-	genmsg.Decode(msg.Data[:4])
+	genmsg.Decode(msg.Data[:nfGenMsgLen])
 	return ruleFromMsg(TableFamily(genmsg.NFGenFamily), msg)
 }
